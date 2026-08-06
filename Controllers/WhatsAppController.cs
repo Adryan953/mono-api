@@ -267,8 +267,7 @@ namespace Mono.Api.Controllers
                     Content = content
                 };
 
-                // Garante que o header Client-Token não será enviado
-                request.Headers.Remove("Client-Token");
+
 
                 var response = await _httpClient.SendAsync(request);
                 
