@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 using Mono.Api.Data;
 using Mono.Api.Entities;
 using Mono.Api.Services;
@@ -18,6 +19,7 @@ namespace Mono.Api.Controllers
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly ILogger<WhatsAppController> _logger;
+        private static readonly MemoryCache _messageCache = new MemoryCache(new MemoryCacheOptions());
 
         private const string ZApiUrl = "https://api.z-api.io/instances/3F732485F93510400A209E26A2DA2CB2/token/80BE2506F43D83D766850D02/send-text";
 
@@ -36,6 +38,21 @@ namespace Mono.Api.Controllers
             try
             {
                 _logger.LogInformation("Payload Z-API: {json}", payload.ToString());
+
+                // ── 0. Deduplicação de Webhook (Evitar processar duas vezes a mesma mensagem) ──
+                if (payload.TryGetProperty("messageId", out var msgIdProp))
+                {
+                    var msgId = msgIdProp.GetString();
+                    if (!string.IsNullOrEmpty(msgId))
+                    {
+                        if (_messageCache.TryGetValue(msgId, out _))
+                        {
+                            _logger.LogInformation("Webhook duplicado ignorado: {messageId}", msgId);
+                            return Ok(new { skipped = true, reason = "Webhook duplicado." });
+                        }
+                        _messageCache.Set(msgId, true, TimeSpan.FromMinutes(2));
+                    }
+                }
 
                 // ── 1. Extrair telefone do payload da Z-API ──────────────────────
                 if (!payload.TryGetProperty("phone", out var phoneProp) ||

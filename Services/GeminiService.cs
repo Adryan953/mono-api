@@ -17,7 +17,7 @@ namespace Mono.Api.Services
         {
             _httpClient = httpClient;
             _apiKey = configuration["GeminiSettings:ApiKey"] ?? string.Empty;
-            _model = configuration["GeminiSettings:Model"] ?? "gemini-2.0-flash";
+            _model = configuration["GeminiSettings:Model"] ?? "gemini-flash-latest";
         }
 
         public async Task<string> ParseTransactionFromTextAsync(string userMessage)
@@ -51,6 +51,14 @@ namespace Mono.Api.Services
             request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.SendAsync(request);
+            if ((int)response.StatusCode == 429)
+            {
+                await Task.Delay(2000);
+                request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Add("X-goog-api-key", _apiKey);
+                request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                response = await _httpClient.SendAsync(request);
+            }
             response.EnsureSuccessStatusCode();
 
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -104,6 +112,14 @@ namespace Mono.Api.Services
             request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.SendAsync(request);
+            if ((int)response.StatusCode == 429)
+            {
+                await Task.Delay(2000);
+                request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Add("X-goog-api-key", _apiKey);
+                request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                response = await _httpClient.SendAsync(request);
+            }
             response.EnsureSuccessStatusCode();
 
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -157,6 +173,14 @@ namespace Mono.Api.Services
             request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.SendAsync(request);
+            if ((int)response.StatusCode == 429)
+            {
+                await Task.Delay(2000);
+                request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Add("X-goog-api-key", _apiKey);
+                request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                response = await _httpClient.SendAsync(request);
+            }
             response.EnsureSuccessStatusCode();
 
             var responseBody = await response.Content.ReadAsStringAsync();
