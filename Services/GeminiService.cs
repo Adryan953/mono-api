@@ -115,5 +115,58 @@ namespace Mono.Api.Services
                                 
             return textResult ?? "{}";
         }
+
+        public async Task<string> ParseTransactionFromAudioAsync(byte[] audioBytes, string mimeType)
+        {
+            if (string.IsNullOrEmpty(_apiKey))
+                throw new Exception("Gemini API Key is not configured.");
+
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Add("X-goog-api-key", _apiKey);
+
+            var base64Audio = Convert.ToBase64String(audioBytes);
+
+            var payload = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new object[]
+                        {
+                            new { text = "Ouça o áudio e extraia a transação. Retorne EXCLUSIVAMENTE em JSON (sem markdown blocks) no formato: { \"valor\": 35.00, \"tipo\": \"Despesa\", \"categoria\": \"Alimentação\", \"descricao\": \"Almoço\" }." },
+                            new 
+                            {
+                                inlineData = new 
+                                {
+                                    mimeType = mimeType,
+                                    data = base64Audio
+                                }
+                            }
+                        }
+                    }
+                },
+                generationConfig = new
+                {
+                    responseMimeType = "application/json"
+                }
+            };
+
+            var jsonPayload = JsonSerializer.Serialize(payload);
+            request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseBody);
+            
+            var textResult = doc.RootElement.GetProperty("candidates")[0]
+                                .GetProperty("content").GetProperty("parts")[0]
+                                .GetProperty("text").GetString();
+                                
+            return textResult ?? "{}";
+        }
     }
 }

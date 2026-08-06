@@ -6,5 +6,6 @@ namespace Mono.Api.Services
     {
         Task<string> ParseTransactionFromTextAsync(string userMessage);
         Task<string> ParseTransactionFromReceiptAsync(byte[] imageBytes);
+        Task<string> ParseTransactionFromAudioAsync(byte[] audioBytes, string mimeType);
     }
 }

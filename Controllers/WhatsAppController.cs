@@ -57,10 +57,23 @@ namespace Mono.Api.Controllers
                     imageUrl = urlProp.GetString() ?? "";
                 }
 
-                // Ignorar payloads sem conteúdo (ex: acks de leitura, status)
-                if (string.IsNullOrEmpty(messageText) && string.IsNullOrEmpty(imageUrl))
+                string audioUrl = string.Empty;
+                string audioMimeType = "audio/ogg";
+                if (payload.TryGetProperty("audio", out var audioProp) &&
+                    audioProp.TryGetProperty("audioUrl", out var aUrlProp))
                 {
-                    return Ok(new { skipped = true, reason = "Payload sem texto ou imagem." });
+                    audioUrl = aUrlProp.GetString() ?? "";
+                    if (audioProp.TryGetProperty("mimeType", out var mimeProp))
+                    {
+                        var mime = mimeProp.GetString();
+                        if (!string.IsNullOrEmpty(mime)) audioMimeType = mime;
+                    }
+                }
+
+                // Ignorar payloads sem conteúdo (ex: acks de leitura, status)
+                if (string.IsNullOrEmpty(messageText) && string.IsNullOrEmpty(imageUrl) && string.IsNullOrEmpty(audioUrl))
+                {
+                    return Ok(new { skipped = true, reason = "Payload sem texto, imagem ou áudio." });
                 }
 
                 // ── 3. Buscar usuário pelo telefone (normalizado sem 9º dígito) ──
@@ -98,7 +111,12 @@ namespace Mono.Api.Controllers
                 // ── 4. Processar com Gemini ──────────────────────────────────────
                 string geminiJsonResponse;
 
-                if (!string.IsNullOrEmpty(imageUrl))
+                if (!string.IsNullOrEmpty(audioUrl))
+                {
+                    var audioBytes = await _httpClient.GetByteArrayAsync(audioUrl);
+                    geminiJsonResponse = await _geminiService.ParseTransactionFromAudioAsync(audioBytes, audioMimeType);
+                }
+                else if (!string.IsNullOrEmpty(imageUrl))
                 {
                     var imageBytes = await _httpClient.GetByteArrayAsync(imageUrl);
                     geminiJsonResponse = await _geminiService.ParseTransactionFromReceiptAsync(imageBytes);
