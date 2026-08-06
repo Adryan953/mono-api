@@ -53,7 +53,7 @@ namespace Mono.Api.Services
             var response = await _httpClient.SendAsync(request);
             if ((int)response.StatusCode == 429)
             {
-                await Task.Delay(2000);
+                await Task.Delay(3000);
                 request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Add("X-goog-api-key", _apiKey);
                 request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
@@ -114,7 +114,7 @@ namespace Mono.Api.Services
             var response = await _httpClient.SendAsync(request);
             if ((int)response.StatusCode == 429)
             {
-                await Task.Delay(2000);
+                await Task.Delay(3000);
                 request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Add("X-goog-api-key", _apiKey);
                 request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
@@ -175,7 +175,7 @@ namespace Mono.Api.Services
             var response = await _httpClient.SendAsync(request);
             if ((int)response.StatusCode == 429)
             {
-                await Task.Delay(2000);
+                await Task.Delay(3000);
                 request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Add("X-goog-api-key", _apiKey);
                 request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
