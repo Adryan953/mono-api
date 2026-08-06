@@ -17,7 +17,7 @@ namespace Mono.Api.Services
         {
             _httpClient = httpClient;
             _apiKey = configuration["GeminiSettings:ApiKey"] ?? string.Empty;
-            _model = configuration["GeminiSettings:Model"] ?? "gemini-2.5-flash";
+            _model = configuration["GeminiSettings:Model"] ?? "gemini-2.0-flash";
         }
 
         public async Task<string> ParseTransactionFromTextAsync(string userMessage)
