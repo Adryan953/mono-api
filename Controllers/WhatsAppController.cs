@@ -15,14 +15,16 @@ namespace Mono.Api.Controllers
         private readonly AppDbContext _context;
         private readonly IGeminiService _geminiService;
         private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
 
         private const string ZApiUrl = "https://api.z-api.io/instances/3F732485F93510400A209E26A2DA2CB2/token/80BE2506F43D83D766850D02/send-text";
 
-        public WhatsAppController(AppDbContext context, IGeminiService geminiService, HttpClient httpClient)
+        public WhatsAppController(AppDbContext context, IGeminiService geminiService, HttpClient httpClient, IConfiguration configuration)
         {
             _context = context;
             _geminiService = geminiService;
             _httpClient = httpClient;
+            _configuration = configuration;
         }
 
         [HttpPost("receive")]
@@ -197,7 +199,13 @@ namespace Mono.Api.Controllers
         // ── Helper: Envio de mensagem pela Z-API ────────────────────────────────
         private async Task SendZApiMessage(string phone, string message)
         {
-            var zApiPayload = new { phone, message };
+            var formattedPhone = OnlyDigits(phone);
+            if (!formattedPhone.StartsWith("55"))
+            {
+                formattedPhone = "55" + formattedPhone;
+            }
+
+            var zApiPayload = new { phone = formattedPhone, message };
             var content = new StringContent(
                 JsonSerializer.Serialize(zApiPayload),
                 Encoding.UTF8,
@@ -205,11 +213,28 @@ namespace Mono.Api.Controllers
 
             try
             {
-                await _httpClient.PostAsync(ZApiUrl, content);
+                var request = new HttpRequestMessage(HttpMethod.Post, ZApiUrl)
+                {
+                    Content = content
+                };
+                
+                var clientToken = _configuration["ZApiSettings:ClientToken"];
+                if (!string.IsNullOrEmpty(clientToken))
+                {
+                    request.Headers.Add("Client-Token", clientToken);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[Z-API Error] Status: {response.StatusCode} - Body: {responseBody}");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Z-API] Falha ao enviar mensagem para {phone}: {ex.Message}");
+                Console.WriteLine($"[Z-API] Falha ao enviar mensagem para {formattedPhone}: {ex.Message}");
             }
         }
 

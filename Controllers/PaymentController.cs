@@ -39,9 +39,9 @@ namespace Mono.Api.Controllers
                     },
                     BackUrls = new PreferenceBackUrlsRequest
                     {
-                        Success = "http://localhost:8080/success.html",
-                        Failure = "http://localhost:8080/failure.html",
-                        Pending = "http://localhost:8080/pending.html"
+                        Success = "https://mono-api-j17s.onrender.com/success.html",
+                        Failure = "https://mono-api-j17s.onrender.com/failure.html",
+                        Pending = "https://mono-api-j17s.onrender.com/pending.html"
                     },
                     AutoReturn = "approved",
                 };
