@@ -17,7 +17,7 @@ namespace Mono.Api.Services
         {
             _httpClient = httpClient;
             _apiKey = configuration["GeminiSettings:ApiKey"] ?? string.Empty;
-            _model = configuration["GeminiSettings:Model"] ?? "gemini-1.5-flash";
+            _model = configuration["GeminiSettings:Model"] ?? "gemini-2.5-flash";
         }
 
         public async Task<string> ParseTransactionFromTextAsync(string userMessage)
@@ -25,7 +25,7 @@ namespace Mono.Api.Services
             if (string.IsNullOrEmpty(_apiKey))
                 throw new Exception("Gemini API Key is not configured.");
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("X-goog-api-key", _apiKey);
 
@@ -68,7 +68,7 @@ namespace Mono.Api.Services
             if (string.IsNullOrEmpty(_apiKey))
                 throw new Exception("Gemini API Key is not configured.");
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("X-goog-api-key", _apiKey);
 
@@ -121,7 +121,7 @@ namespace Mono.Api.Services
             if (string.IsNullOrEmpty(_apiKey))
                 throw new Exception("Gemini API Key is not configured.");
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("X-goog-api-key", _apiKey);
 
