@@ -18,6 +18,11 @@ namespace Mono.Api.Services
             _httpClient = httpClient;
             _apiKey = configuration["GeminiSettings:ApiKey"] ?? string.Empty;
             _model = configuration["GeminiSettings:Model"] ?? "gemini-flash-latest";
+
+            if (!string.IsNullOrEmpty(_apiKey))
+            {
+                _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", _apiKey);
+            }
         }
 
         public async Task<string> ParseTransactionFromTextAsync(string userMessage)
@@ -27,7 +32,6 @@ namespace Mono.Api.Services
 
             var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Add("X-goog-api-key", _apiKey);
 
             var payload = new
             {
@@ -55,7 +59,6 @@ namespace Mono.Api.Services
             {
                 await Task.Delay(3000);
                 request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Add("X-goog-api-key", _apiKey);
                 request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
                 response = await _httpClient.SendAsync(request);
             }
@@ -78,7 +81,6 @@ namespace Mono.Api.Services
 
             var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Add("X-goog-api-key", _apiKey);
 
             var base64Image = Convert.ToBase64String(imageBytes);
 
@@ -116,7 +118,6 @@ namespace Mono.Api.Services
             {
                 await Task.Delay(3000);
                 request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Add("X-goog-api-key", _apiKey);
                 request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
                 response = await _httpClient.SendAsync(request);
             }
@@ -139,7 +140,6 @@ namespace Mono.Api.Services
 
             var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Add("X-goog-api-key", _apiKey);
 
             var base64Audio = Convert.ToBase64String(audioBytes);
 
@@ -177,7 +177,6 @@ namespace Mono.Api.Services
             {
                 await Task.Delay(3000);
                 request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Add("X-goog-api-key", _apiKey);
                 request.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
                 response = await _httpClient.SendAsync(request);
             }
