@@ -47,6 +47,18 @@ namespace Mono.Api.Controllers
             };
 
             _context.Users.Add(user);
+
+            var defaultWallet = new Wallet
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Nome = "Carteira Principal",
+                Tipo = "Dinheiro",
+                SaldoInicial = 0.00m,
+                SaldoAtual = 0.00m
+            };
+            _context.Wallets.Add(defaultWallet);
+
             await _context.SaveChangesAsync();
 
             return Ok(new { Message = "Usuário cadastrado com sucesso." });

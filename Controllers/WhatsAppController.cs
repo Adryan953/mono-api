@@ -135,8 +135,17 @@ namespace Mono.Api.Controllers
 
                 if (defaultWallet == null)
                 {
-                    await SendZApiMessage(phone, "⚠️ Você precisa cadastrar pelo menos uma Carteira (Wallet) no painel antes de registrar transações!");
-                    return Ok(new { success = false, reason = "Usuário sem carteira ativa." });
+                    defaultWallet = new Wallet
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = user.Id,
+                        Nome = "Carteira Principal",
+                        Tipo = "Dinheiro",
+                        SaldoInicial = 0.00m,
+                        SaldoAtual = 0.00m
+                    };
+                    _context.Wallets.Add(defaultWallet);
+                    await _context.SaveChangesAsync();
                 }
 
                 // ── 5. Salvar transação vinculada ao UserId e WalletId corretos ──────────────
