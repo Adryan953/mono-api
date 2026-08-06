@@ -10,8 +10,7 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 
-// Configuração do WebHost para escutar no localhost
-builder.WebHost.UseUrls("http://localhost:5140");
+
 
 // Configuração do CORS
 builder.Services.AddCors(options =>
