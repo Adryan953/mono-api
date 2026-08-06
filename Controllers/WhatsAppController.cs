@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Mono.Api.Data;
 using Mono.Api.Entities;
 using Mono.Api.Services;
@@ -16,15 +17,17 @@ namespace Mono.Api.Controllers
         private readonly IGeminiService _geminiService;
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<WhatsAppController> _logger;
 
         private const string ZApiUrl = "https://api.z-api.io/instances/3F732485F93510400A209E26A2DA2CB2/token/80BE2506F43D83D766850D02/send-text";
 
-        public WhatsAppController(AppDbContext context, IGeminiService geminiService, HttpClient httpClient, IConfiguration configuration)
+        public WhatsAppController(AppDbContext context, IGeminiService geminiService, HttpClient httpClient, IConfiguration configuration, ILogger<WhatsAppController> logger)
         {
             _context = context;
             _geminiService = geminiService;
             _httpClient = httpClient;
             _configuration = configuration;
+            _logger = logger;
         }
 
         [HttpPost("receive")]
@@ -32,6 +35,8 @@ namespace Mono.Api.Controllers
         {
             try
             {
+                _logger.LogInformation("Payload Z-API: {json}", payload.ToString());
+
                 // ── 1. Extrair telefone do payload da Z-API ──────────────────────
                 if (!payload.TryGetProperty("phone", out var phoneProp) ||
                     string.IsNullOrEmpty(phoneProp.GetString()))
