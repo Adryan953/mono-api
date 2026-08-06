@@ -40,7 +40,7 @@ namespace Mono.Api.Controllers
                 Id = Guid.NewGuid(),
                 Nome = request.Nome,
                 Email = request.Email,
-                Telefone = request.Telefone,
+                Telefone = Utils.PhoneHelper.Sanitize(request.Telefone),
                 SenhaHash = HashPassword(request.Password),
                 PlanoAtivo = true,
                 Role = "Admin"

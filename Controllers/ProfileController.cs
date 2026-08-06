@@ -37,7 +37,7 @@ namespace Mono.Api.Controllers
                 user.Nome = request.Nome;
                 
             if (!string.IsNullOrEmpty(request.Telefone))
-                user.Telefone = request.Telefone;
+                user.Telefone = Utils.PhoneHelper.Sanitize(request.Telefone);
 
             if (!string.IsNullOrEmpty(request.Email))
             {

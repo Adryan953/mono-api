@@ -62,7 +62,7 @@ namespace Mono.Api.Controllers
             if (!string.IsNullOrEmpty(request.Nome)) user.Nome = request.Nome;
             // Email usually shouldn't be updated or needs verification, but keeping it simple as requested
             // if (!string.IsNullOrEmpty(request.Email)) user.Email = request.Email;
-            if (request.Telefone != null) user.Telefone = request.Telefone;
+            if (request.Telefone != null) user.Telefone = Utils.PhoneHelper.Sanitize(request.Telefone);
 
             if (!string.IsNullOrEmpty(request.NovaSenha))
             {
