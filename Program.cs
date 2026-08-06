@@ -9,8 +9,8 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
+// Configuração do WebHost para escutar na porta 8080 externamente
+builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
 // Configuração do CORS
 builder.Services.AddCors(options =>
