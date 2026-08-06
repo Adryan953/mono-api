@@ -25,7 +25,7 @@ namespace Mono.Api.Services
             if (string.IsNullOrEmpty(_apiKey))
                 throw new Exception("Gemini API Key is not configured.");
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("X-goog-api-key", _apiKey);
 
@@ -76,7 +76,7 @@ namespace Mono.Api.Services
             if (string.IsNullOrEmpty(_apiKey))
                 throw new Exception("Gemini API Key is not configured.");
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("X-goog-api-key", _apiKey);
 
@@ -137,7 +137,7 @@ namespace Mono.Api.Services
             if (string.IsNullOrEmpty(_apiKey))
                 throw new Exception("Gemini API Key is not configured.");
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("X-goog-api-key", _apiKey);
 
