@@ -267,7 +267,11 @@ namespace Mono.Api.Controllers
                     Content = content
                 };
 
-
+                var clientToken = _configuration["ZApi:ClientToken"];
+                if (!string.IsNullOrEmpty(clientToken))
+                {
+                    request.Headers.Add("Client-Token", clientToken);
+                }
 
                 var response = await _httpClient.SendAsync(request);
                 
