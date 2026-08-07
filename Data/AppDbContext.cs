@@ -12,6 +12,7 @@ namespace Mono.Api.Data
         public DbSet<Wallet> Wallets { get; set; }
         public DbSet<Card> Cards { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<SpendingCeiling> SpendingCeilings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,6 +53,13 @@ namespace Mono.Api.Data
             modelBuilder.Entity<Category>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<SpendingCeiling>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Percentage).HasColumnType("decimal(5,2)");
                 entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
             });
         }
