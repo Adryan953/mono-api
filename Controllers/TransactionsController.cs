@@ -34,11 +34,19 @@ namespace Mono.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetTransactions()
+        public async Task<IActionResult> GetTransactions([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
         {
             var accountId = await GetAccountOwnerIdAsync();
-            var transactions = await _context.Transactions
-                .Where(t => t.UserId == accountId && t.IsActive)
+            var query = _context.Transactions
+                .Where(t => t.UserId == accountId && t.IsActive);
+
+            if (startDate.HasValue)
+                query = query.Where(t => t.Data >= startDate.Value);
+            
+            if (endDate.HasValue)
+                query = query.Where(t => t.Data <= endDate.Value);
+
+            var transactions = await query
                 .OrderByDescending(t => t.Data)
                 .Select(t => new TransactionResponseDto
                 {
@@ -53,6 +61,21 @@ namespace Mono.Api.Controllers
                 .ToListAsync();
 
             return Ok(transactions);
+        }
+
+        [HttpGet("balance")]
+        public async Task<IActionResult> GetBalance()
+        {
+            var accountId = await GetAccountOwnerIdAsync();
+            var transactions = await _context.Transactions
+                .Where(t => t.UserId == accountId && t.IsActive && t.StatusPago == "settled")
+                .ToListAsync();
+
+            var receitas = transactions.Where(t => t.Tipo.ToLower() == "receita" || t.Tipo.ToLower() == "income").Sum(t => t.Valor);
+            var despesas = transactions.Where(t => t.Tipo.ToLower() == "despesa" || t.Tipo.ToLower() == "expense").Sum(t => t.Valor);
+            var saldo = receitas - despesas;
+
+            return Ok(new { balance = saldo });
         }
 
         [HttpPost]
