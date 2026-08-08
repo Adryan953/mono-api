@@ -60,16 +60,10 @@ namespace Mono.Api.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateSpendingCeilings([FromBody] List<SpendingCeilingDto> newCeilings)
+        public async Task<IActionResult> UpdateSpendingCeilings([FromBody] List<SpendingCeilingItemDto> items)
         {
             var ownerId = GetParentOrUserId();
             if (ownerId == null) return Unauthorized();
-
-            var totalPercentage = newCeilings.Sum(c => c.Percentage);
-            if (totalPercentage != 100m)
-            {
-                return BadRequest("A soma das porcentagens deve ser exatamente 100%.");
-            }
 
             var existingCeilings = await _context.SpendingCeilings
                 .Where(c => c.UserId == ownerId)
@@ -77,23 +71,23 @@ namespace Mono.Api.Controllers
 
             _context.SpendingCeilings.RemoveRange(existingCeilings);
 
-            var ceilingsToAdd = newCeilings.Select(dto => new SpendingCeiling
+            var ceilingsToAdd = items.Select(dto => new SpendingCeiling
             {
                 UserId = ownerId.Value,
-                CategoryName = dto.CategoryName,
+                CategoryName = dto.Name,
                 Percentage = dto.Percentage
             }).ToList();
 
             _context.SpendingCeilings.AddRange(ceilingsToAdd);
             await _context.SaveChangesAsync();
 
-            return Ok(ceilingsToAdd);
+            return Ok(new { success = true, message = "Tetos salvos com sucesso!" });
         }
     }
 
-    public class SpendingCeilingDto
+    public class SpendingCeilingItemDto 
     {
-        public string CategoryName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public decimal Percentage { get; set; }
     }
 }
