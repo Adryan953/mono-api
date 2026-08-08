@@ -102,6 +102,29 @@ namespace Mono.Api.Controllers
             });
         }
 
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetMe()
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound("Usuário não encontrado.");
+
+            return Ok(new
+            {
+                Id = user.Id,
+                Nome = user.Nome,
+                Email = user.Email,
+                Role = user.Role,
+                Plano = user.Plano,
+                PlanoAtivo = user.PlanoAtivo,
+                DataExpiracaoPlano = user.DataExpiracaoPlano
+            });
+        }
+
         private string HashPassword(string password)
         {
             using var sha256 = SHA256.Create();

@@ -66,14 +66,22 @@ namespace Mono.Api.Controllers
 
                 var action = (eventName ?? statusName ?? "").ToLower();
 
-                // 3. Extração do E-mail do Cliente
+                // 3. Extração do E-mail do Cliente e Nome do Produto
                 string? email = null;
+                string? productName = null;
+
                 if (payload.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Object)
                 {
                     if (dataElement.TryGetProperty("customer", out var customerElement) && customerElement.ValueKind == JsonValueKind.Object)
                     {
                         if (customerElement.TryGetProperty("email", out var emailElement))
                             email = emailElement.GetString();
+                    }
+
+                    if (dataElement.TryGetProperty("product", out var productElement) && productElement.ValueKind == JsonValueKind.Object)
+                    {
+                        if (productElement.TryGetProperty("name", out var prodNameElement))
+                            productName = prodNameElement.GetString();
                     }
                 }
                 
@@ -83,16 +91,25 @@ namespace Mono.Api.Controllers
                         email = emailElement.GetString();
                 }
 
+                if (string.IsNullOrEmpty(productName) && payload.TryGetProperty("product", out var productTop) && productTop.ValueKind == JsonValueKind.Object)
+                {
+                    if (productTop.TryGetProperty("name", out var prodNameElement))
+                        productName = prodNameElement.GetString();
+                }
+
                 if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(action))
                 {
-                    // Falta e-mail ou ação
                     return Ok(new { success = true, message = "Evento ignorado, dados insuficientes (e-mail ou status ausentes)." });
                 }
 
+                email = email.ToLower().Trim();
+                Console.WriteLine($"Webhook Cakto recebido para: {email} | Ação: {action}");
+
                 // 4. Busca do Usuário no PostgreSQL
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
                 if (user == null)
                 {
+                    Console.WriteLine($"Usuário não encontrado no banco de dados para o email: {email}");
                     return Ok(new { success = true, message = "Usuário não encontrado no banco de dados." });
                 }
 
@@ -102,20 +119,34 @@ namespace Mono.Api.Controllers
 
                 var isCanceled = action == "canceled" || action == "refunded" || 
                                  action == "subscription.canceled" || action == "purchase.refunded" || 
-                                 action == "subscription.expired";
+                                 action == "subscription.expired" || action == "chargeback";
 
                 if (isApproved)
                 {
-                    user.Plano = "PRO"; 
+                    // Define o plano baseado no nome do produto.
+                    var planToAssign = "Pro"; // Padrão caso não identifique
+                    if (!string.IsNullOrEmpty(productName))
+                    {
+                        var pn = productName.ToLower();
+                        if (pn.Contains("premium")) planToAssign = "Premium";
+                        else if (pn.Contains("basic") || pn.Contains("básico")) planToAssign = "Basic";
+                        else if (pn.Contains("pro")) planToAssign = "Pro";
+                    }
+
+                    user.Plano = planToAssign; 
                     user.PlanoAtivo = true;
-                    // Define validade baseada no evento. Ex: +30 dias. Em produção, extrair da data do webhook se disponível.
+                    // Exemplo fixo: 1 mês
                     user.DataExpiracaoPlano = DateTime.UtcNow.AddMonths(1); 
+
+                    Console.WriteLine($"E-mail: {email} - Assinatura Aprovada. Plano atribuído: {planToAssign}");
                 }
                 else if (isCanceled)
                 {
                     user.Plano = "Basic";
                     user.PlanoAtivo = false;
                     user.DataExpiracaoPlano = null;
+
+                    Console.WriteLine($"E-mail: {email} - Assinatura Cancelada/Reembolsada. Plano rebaixado para Basic.");
                 }
 
                 await _context.SaveChangesAsync();
