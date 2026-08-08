@@ -32,6 +32,7 @@ builder.Services.AddOpenApi();
 // Serviços de Integração
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<Mono.Api.Services.IGeminiService, Mono.Api.Services.GeminiService>();
+builder.Services.AddHttpClient<Mono.Api.Services.ICaktoService, Mono.Api.Services.CaktoService>();
 
 // Banco de Dados (EF Core com PostgreSQL)
 builder.Services.AddDbContext<AppDbContext>(options =>

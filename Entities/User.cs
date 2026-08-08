@@ -10,8 +10,9 @@ namespace Mono.Api.Entities
         public string Email { get; set; } = string.Empty;
         public string SenhaHash { get; set; } = string.Empty;
         public string? Telefone { get; set; }
-        public string Plano { get; set; } = "Individual"; // Individual, Familia, Business
+        public string Plano { get; set; } = "Individual"; // Individual, Familia, Business, PRO, Basic
         public bool PlanoAtivo { get; set; } = false;
+        public DateTime? DataExpiracaoPlano { get; set; }
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
 
         public Guid? ParentUserId { get; set; }
