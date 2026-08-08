@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Mono.Api.Data;
 using System.Text.Json;
 using System;
@@ -13,10 +14,12 @@ namespace Mono.Api.Controllers
     public class CaktoWebhookController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public CaktoWebhookController(AppDbContext context)
+        public CaktoWebhookController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpPost]
@@ -25,17 +28,46 @@ namespace Mono.Api.Controllers
         {
             try
             {
-                // Estrutura genérica assumida: { "event": "...", "data": { "customer": { "email": "..." } } }
-                // Ou formato direto { "event": "...", "customer": { "email": "..." } }
+                // 1. Validação da Chave Secreta
+                var configuredSecret = _configuration["CAKTO_WEBHOOK_SECRET"] ?? Environment.GetEnvironmentVariable("CAKTO_WEBHOOK_SECRET");
+                if (!string.IsNullOrEmpty(configuredSecret))
+                {
+                    var requestSecret = Request.Headers["X-Cakto-Secret"].ToString();
+                    if (string.IsNullOrEmpty(requestSecret))
+                        requestSecret = Request.Headers["Authorization"].ToString().Replace("Bearer ", "").Trim();
+                    if (string.IsNullOrEmpty(requestSecret))
+                        requestSecret = Request.Query["secret"].ToString();
+                    
+                    if (requestSecret != configuredSecret)
+                    {
+                        return Unauthorized(new { success = false, message = "Chave de webhook inválida ou não fornecida." });
+                    }
+                }
+
+                // 2. Extração de Evento e Status
                 string? eventName = null;
                 if (payload.TryGetProperty("event", out var eventElement))
                 {
                     eventName = eventElement.GetString();
                 }
 
-                string? email = null;
+                string? statusName = null;
+                if (payload.TryGetProperty("status", out var statusElement))
+                {
+                    statusName = statusElement.GetString();
+                }
+                else if (payload.TryGetProperty("data", out var dataStatusElement) && dataStatusElement.ValueKind == JsonValueKind.Object)
+                {
+                    if (dataStatusElement.TryGetProperty("status", out var innerStatusElement))
+                    {
+                        statusName = innerStatusElement.GetString();
+                    }
+                }
 
-                // Procura o e-mail em diferentes níveis do payload genérico
+                var action = (eventName ?? statusName ?? "").ToLower();
+
+                // 3. Extração do E-mail do Cliente
+                string? email = null;
                 if (payload.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Object)
                 {
                     if (dataElement.TryGetProperty("customer", out var customerElement) && customerElement.ValueKind == JsonValueKind.Object)
@@ -51,26 +83,35 @@ namespace Mono.Api.Controllers
                         email = emailElement.GetString();
                 }
 
-                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(eventName))
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(action))
                 {
-                    // Falta e-mail ou evento, apenas retorna 200 para ack
-                    return Ok(new { success = true, message = "Evento ignorado, dados insuficientes." });
+                    // Falta e-mail ou ação
+                    return Ok(new { success = true, message = "Evento ignorado, dados insuficientes (e-mail ou status ausentes)." });
                 }
 
+                // 4. Busca do Usuário no PostgreSQL
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
                 if (user == null)
                 {
-                    return Ok(new { success = true, message = "Usuário não encontrado." });
+                    return Ok(new { success = true, message = "Usuário não encontrado no banco de dados." });
                 }
 
-                if (eventName == "subscription.approved" || eventName == "purchase.approved")
+                // 5. Processamento do Status / Evento
+                var isApproved = action == "paid" || action == "approved" || 
+                                 action == "subscription.approved" || action == "purchase.approved";
+
+                var isCanceled = action == "canceled" || action == "refunded" || 
+                                 action == "subscription.canceled" || action == "purchase.refunded" || 
+                                 action == "subscription.expired";
+
+                if (isApproved)
                 {
-                    user.Plano = "PRO"; // Ajustar conforme a lógica real do produto, se houver
+                    user.Plano = "PRO"; 
                     user.PlanoAtivo = true;
-                    // Exemplo: Expira em 1 mês. Pode-se extrair do payload se houver "expires_at".
+                    // Define validade baseada no evento. Ex: +30 dias. Em produção, extrair da data do webhook se disponível.
                     user.DataExpiracaoPlano = DateTime.UtcNow.AddMonths(1); 
                 }
-                else if (eventName == "subscription.canceled" || eventName == "purchase.refunded" || eventName == "subscription.expired")
+                else if (isCanceled)
                 {
                     user.Plano = "Basic";
                     user.PlanoAtivo = false;
